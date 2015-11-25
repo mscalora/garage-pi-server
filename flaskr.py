@@ -21,13 +21,12 @@ app.config.update(dict(
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
-unauthenticated_list = ["static"]
-
 
 def unauthenticated(func):
-    global unauthenticated_list
+    if 'unauthenticated_list' not in globals():
+        globals()['unauthenticated_list'] = ["static"]
     """decorator to identify requests which don't need authentication"""
-    unauthenticated_list.append(func.__name__)
+    globals()['unauthenticated_list'].append(func.__name__)
     return func
 
 
@@ -72,7 +71,9 @@ def close_db(error):
 @app.before_request
 def before_request():
     """require authentication on all request which are not specifically decorated with @unauthenticated"""
-    if 'logged_in' not in session and request.endpoint not in unauthenticated_list:
+    if 'unauthenticated_list' not in globals():
+        globals()['unauthenticated_list'] = ["static"]
+    if 'logged_in' not in session and request.endpoint not in globals()['unauthenticated_list']:
         return redirect(url_for('login'))
 
 
