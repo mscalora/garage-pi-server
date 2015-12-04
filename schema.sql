@@ -1,6 +1,14 @@
-drop table if exists entries;
-create table entries (
-  id integer primary key autoincrement,
-  title text not null,
-  'text' text not null
+CREATE TABLE log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  type        TEXT NOT NULL,
+  description TEXT NOT NULL,
+  timestamp   TEXT NOT NULL
+);
+
+CREATE TABLE user
+(
+  id     INTEGER PRIMARY KEY NOT NULL,
+  userid TEXT                NOT NULL COLLATE NOCASE,
+  pwhash TEXT                NOT NULL,
+  admin  BOOLEAN DEFAULT 0   NOT NULL
 );

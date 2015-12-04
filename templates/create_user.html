@@ -12,19 +12,23 @@
         <div class="form-container">
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">Log in</h3>
+                    <h3 class="panel-title">Create User</h3>
                 </div>
                 <div class="panel-body">
-                    <form action="{{ url_for('login') }}" method="post">
+                    <form action="{{ url_for('create_user') }}" method="post">
                         <div class="form-group">
                             <label for="title">Username</label>
-                            <input name="username" type="text" class="form-control" id="title" value="mscalora">
+                            <input name="username" type="text" class="form-control" id="username" value="">
                         </div>
                         <div class="form-group">
                             <label for="text">Password</label>
-                            <input name="password" type="password" class="form-control" id="text" value="test1234">
+                            <input name="password" type="password" class="form-control" id="password" value="">
                         </div>
-                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <div class="form-group">
+                            <label for="text">Admin</label>
+                            <input name="admin" type="checkbox" class="form-control" id="admin">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create</button>
                     </form>
                 </div>
             </div>

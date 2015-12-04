@@ -23,3 +23,16 @@ th {
 .add-entry-panel {
     display: none;
 }
+
+.type_field,
+.ts_field {
+    white-space: nowrap;
+}
+
+.webcam-container img {
+    width: 100%;
+}
+
+.userid-item i {
+    margin-right: 0.5em;
+}
