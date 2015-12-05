@@ -38,26 +38,45 @@ def connect_db():
     return rv
 
 
-def init_db():
-    """Initializes the database."""
+@app.cli.command('initdb')
+def initdb_command():
+    """Creates the database tables."""
     db = get_db()
     with app.open_resource('schema.sql', mode='r') as f:
         db.cursor().executescript(f.read())
     db.commit()
+    print('Initialized the database. Use create_admin to create your fist admin user.')
 
 
-@app.cli.command('initdb')
-def initdb_command():
-    """Creates the database tables."""
-    bcrypt.generate_password_hash('hunter2')
-    print('Initialized the database.')
+@app.cli.command('create_admin')
+def create_admin():
+    """Create admin user.
 
+    run on command line in project folder like:
 
-@app.cli.command('hashpw')
-def hashpw_command():
-    """Output a password hash."""
-    print('Password hash: %s' % bcrypt.generate_password_hash(app.config['PASSWORD']))
-    print("Don't forget to set the BCRYPT setting to True")
+        USER=joe PW=secret flask -a garage-pi create_admin
+
+    """
+    userid = os.getenv('USER', False)
+    if userid == False or os.getenv('PW', False) == False:
+        print("You must set environment variables USER and PW.")
+        print("Example:")
+        print("    USER=joe PW=secret flask -a garage-pi create_admin")
+        return
+    db = get_db()
+    cur = db.execute('select id, userid, pwhash, admin from user where userid = ?', [userid])
+    entries = cur.fetchall()
+    if len(entries):
+        for entry in entries:
+            print("%s user with the userid '%s' exists." % ('Admin' if int(entry['admin']) else 'Non-admin', entry['userid']))
+        return
+    db.execute('insert into user (id, userid, pwhash, admin) values (null, ?, ?, ?)', [
+        userid,
+        bcrypt.generate_password_hash(os.getenv('PW')),
+        1
+    ])
+    db.commit()
+    print("Admin user '%s' created." % userid)
 
 
 def get_db():
