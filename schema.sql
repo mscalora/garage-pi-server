@@ -1,7 +1,7 @@
 CREATE TABLE log (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   type        TEXT NOT NULL,
-  description TEXT NOT NULL,
+  detail      TEXT NOT NULL,
   timestamp   TEXT NOT NULL
 );
 
