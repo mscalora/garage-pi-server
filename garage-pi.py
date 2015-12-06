@@ -3,10 +3,11 @@
 import os
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+     render_template, flash, send_file
 from flask.ext.bcrypt import Bcrypt
 import time
 import datetime
+import camera
 
 # create our little application :)
 import sys
@@ -18,7 +19,8 @@ bcrypt = Bcrypt(app)
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'garage-pi.db'),
     DEBUG=True,
-    SECRET_KEY='so-so-secret'
+    SECRET_KEY='so-so-secret',
+    TMP_IMAGES_PATH='/var/tmp'
 ))
 app.config.from_envvar('SETTINGS_FILE', silent=True)
 
@@ -36,6 +38,11 @@ def connect_db():
     rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
+
+
+@app.cli.command('test')
+def test():
+    print()
 
 
 @app.cli.command('initdb')
@@ -58,7 +65,7 @@ def create_admin():
 
     """
     userid = os.getenv('USER', False)
-    if userid == False or os.getenv('PW', False) == False:
+    if not userid or os.getenv('PW', False) == False:
         print("You must set environment variables USER and PW.")
         print("Example:")
         print("    USER=joe PW=secret flask -a garage-pi create_admin")
@@ -102,6 +109,14 @@ def before_request():
         globals()['unauthenticated_list'] = ["static"]
     if 'logged_in' not in session and request.endpoint not in globals()['unauthenticated_list']:
         return redirect(url_for('login'))
+
+
+@app.route('/camera')
+def get_image():
+    filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
+    sys.stdout.write('Temp: %s\n' % filename)
+    camera.get_webcam_image(filename)
+    return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg')
 
 
 @app.route('/')

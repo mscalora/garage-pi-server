@@ -9,11 +9,43 @@
                 </div>
                 <div class="panel-body">
                     <div class="webcam-container">
-                        <img src="{{ url_for('static', filename='gdoor.jpg') }}">
+                        <img class='placeholder' src="{{ url_for('static', filename='gdoor.jpg') }}">
+                        <div class="img-area">
+                            <img src="">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+    <style>
+        .webcam-container { position: relative; }
+        .img-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            opacity: 0;
+            text-align: center;
+        }
+        .img-area img {
+            max-height: 100%;
+            max-width: 100%;
+        }
+    </style>
+    <script>
+        function reload(){
+            $('.img-area img').prop('src','/camera?ts='+ $.now());
+        }
+        var recovery_timer;
+        $('.img-area img').on('load', function(){
+            $('.placeholder').prop('src', $('.img-area img').prop('src'));
+            setTimeout(reload, 1000);
+            clearInterval(recovery_timer);
+            recovery_timer = setInterval(function(){
+                $('.img-area img').prop('src','/camera?ts='+ $.now());
+            }, 5000);
+        }).prop('src','/camera');
+    </script>
 {% endblock %}
