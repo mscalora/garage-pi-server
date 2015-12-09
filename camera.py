@@ -16,7 +16,6 @@ if sys.platform == 'darwin':
             if os.path.exists(cap_file):
                 break
             time.sleep(0.1)
-        print('Status: %s %s %s %s' % (status, os.path.exists(cap_file), os.path.exists(tmp_file), cap_file))
         if os.path.exists(tmp_file):
             os.unlink(tmp_file)
         if os.path.exists(cap_file):

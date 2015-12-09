@@ -18,6 +18,53 @@
             </div>
         </div>
     </div>
+
+    <div class="controls-row row">
+        <div class="col-sm-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Controls</h3>
+                </div>
+                <div class="panel-body">
+                    <button class="btn-gdoor btn btn-default">Garage<br>Door</button>
+                    <button class="btn-light btn btn-default"><i class="fa fa-lightbulb-o fa-4x"></i></button>
+                    <button class="btn-buzzer btn btn-default"><i class="fa fa-bullhorn fa-4x"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="code-row row">
+        <div class="col-sm-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <div class="code-closer">
+                        <div class="code-closer-box">
+                            <i class="fa fa-times"></i>
+                        </div>
+                    </div>
+                    <h3 class="panel-title">Enter Code</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="keep-together">
+                        <button class="btn btn-default">0</button>
+                        <button class="btn btn-default">1</button>
+                        <button class="btn btn-default">2</button>
+                        <button class="btn btn-default">3</button>
+                        <button class="btn btn-default">4</button>
+                    </div>
+                    <div class="keep-together">
+                        <button class="btn btn-default">5</button>
+                        <button class="btn btn-default">6</button>
+                        <button class="btn btn-default">7</button>
+                        <button class="btn btn-default">8</button>
+                        <button class="btn btn-default">9</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .webcam-container { position: relative; }
         .img-area {
@@ -33,6 +80,53 @@
             max-height: 100%;
             max-width: 100%;
         }
+        .controls-row .panel-body button {
+            padding: 4px 10px;
+            line-height: 1;
+            vertical-align: top;
+            border-radius: 20px;
+            margin: 0 14px;
+        }
+        .controls-row .panel-body {
+            text-align: center;
+        }
+        .code-row .panel-heading i {
+            Xfloat: right;
+        }
+        .code-row .panel-body {
+            text-align: center;
+        }
+        .code-row button {
+            margin: 0 6px;
+        }
+        .code-row .keep-together {
+            display: inline-block;
+        }
+        button:active,
+        button:focus {
+            outline: none;
+        }
+        .code-closer {
+            float: right;
+            position: relative;
+            Xoutline: 2px dashed red;
+            height: 1em;
+            width: 1em;
+        }
+
+        .code-closer-box {
+            position: absolute;
+            top: -1em;
+            bottom: -1em;
+            left: -1em;
+            right: -1em;
+            padding: 1em;
+            Xoutline: 2px dotted green;
+        }
+
+        .code-closer-box:hover i {
+            color: blue;
+        }
     </style>
     <script>
         function reload(){
@@ -47,5 +141,50 @@
                 $('.img-area img').prop('src','/camera?ts='+ $.now());
             }, 5000);
         }).prop('src','/camera');
+        var buttons = $('.controls-row .panel-body button');
+        var h = 0, w = 0;
+        buttons.each(function(){
+            h = Math.max(h, $(this).outerHeight());
+            w = Math.max(w, $(this).outerWidth());
+        }).each(function(){
+            $(this).height(h).width(w);
+        });
+    $('.code-row').hide();
+    var code = '';
+    var confirm = '{{ confirm_code }}';
+    $('.btn-gdoor').on('click', function(){
+        var h = $('.controls-row .panel-body').height();
+        $('.controls-row').hide();
+        $('.code-row').show().find('.panel-body').css('min-height', h);
+
+    });
+    $('.code-row .panel-heading .code-closer').on('click', reset_code);
+    function reset_code(){
+        $('.code-row').hide().find('.panel-body').css('min-height', '');
+        $('.controls-row').show();
+    }
+    $('.code-row .panel-title').data('title', $('.code-row .panel-title').text());
+    $('.code-row .panel-body button').on('click', function(){
+        var char = $(this).text();
+        code += char;
+        $('.code-row .panel-title').text(code);
+        if (code.length>=confirm.length) {
+            if (code==confirm) {
+                $.ajax({url:'/action/gdoor', success: function(){
+                    reset_code();
+                }})
+            } else {
+                reset_code();
+            }
+            $('.code-row .panel-title').text($('.code-row .panel-title').data('title'));
+            code ='';
+        }
+    });
+    $('.btn-light').on('click', function(){
+
+    });
+    $('.btn-buzzer').on('click', function(){
+
+    });
     </script>
 {% endblock %}

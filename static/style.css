@@ -36,3 +36,8 @@ th {
 .userid-item i {
     margin-right: 0.5em;
 }
+
+.btn:active:focus,
+.btn:focus {
+    outline: none;
+}

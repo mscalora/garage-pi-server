@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-
 import os
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash, send_file
+     render_template, flash, send_file  # , logging as flask_logging
 from flask.ext.bcrypt import Bcrypt
 import time
 import datetime
 import camera
+import gpio
+
 
 # create our little application :)
 import sys
@@ -20,9 +21,17 @@ app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'garage-pi.db'),
     DEBUG=True,
     SECRET_KEY='so-so-secret',
-    TMP_IMAGES_PATH='/var/tmp'
+    TMP_IMAGES_PATH='/var/tmp',
+    GDOOR_CODE='1234'
 ))
 app.config.from_envvar('SETTINGS_FILE', silent=True)
+
+
+if 'LOG_FILE' in app.config:
+    from logging.handlers import TimedRotatingFileHandler
+    handler = TimedRotatingFileHandler(app.config['LOG_FILE'])
+    handler.setLevel(app.config['LOG_LEVEL'] if 'LOG_LEVEL' in app.config else 'WARNING')
+    app.logger.addHandler(handler)
 
 
 def unauthenticated(func):
@@ -114,14 +123,28 @@ def before_request():
 @app.route('/camera')
 def get_image():
     filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
-    sys.stdout.write('Temp: %s\n' % filename)
     camera.get_webcam_image(filename)
     return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg')
 
 
+@app.route('/action/gdoor')
+def action_gdoor():
+    gpio.pulse(1)
+
+
+@app.route('/action/light')
+def action_light():
+    gpio.pulse(2, duration=2)
+
+
+@app.route('/action/buzzer')
+def action_buzer():
+    gpio.pulse(3)
+
+
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return render_template('home.html', confirm_code=app.config['GDOOR_CODE'])
 
 
 @app.route('/log')
@@ -195,3 +218,7 @@ def logout():
         session.pop('logged_in', None)
     flash('You were logged out')
     return redirect(url_for('login'))
+
+
+sys.stderr.write("All routes installed.\n")
+app.logger.debug("All routes installed")
