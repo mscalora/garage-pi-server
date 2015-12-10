@@ -26,7 +26,7 @@ app.config.from_envvar('SETTINGS_FILE', silent=True)
 
 if 'REMOTE_DEBUG' in app.config or 'REMOTE_DEBUG' in os.environ:
     import pydevd
-    con = (app.config['LOG_FILE'] if 'REMOTE_DEBUG' in app.config else os.environ['REMOTE_DEBUG']).split(':')
+    con = (app.config['REMOTE_DEBUG'] if 'REMOTE_DEBUG' in app.config else os.environ['REMOTE_DEBUG']).split(':')
     pydevd.settrace(con[0], port=int(con[1]), stdoutToServer=True, stderrToServer=True)
 
 
