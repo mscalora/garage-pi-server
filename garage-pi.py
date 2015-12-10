@@ -8,9 +8,6 @@ import time
 import datetime
 import camera
 import gpio
-
-
-# create our little application :)
 import sys
 
 app = Flask(__name__)
@@ -25,6 +22,12 @@ app.config.update(dict(
     GDOOR_CODE='1234'
 ))
 app.config.from_envvar('SETTINGS_FILE', silent=True)
+
+
+if 'REMOTE_DEBUG' in app.config or 'REMOTE_DEBUG' in os.environ:
+    import pydevd
+    con = (app.config['LOG_FILE'] if 'REMOTE_DEBUG' in app.config else os.environ['REMOTE_DEBUG']).split(':')
+    pydevd.settrace(con[0], port=int(con[1]), stdoutToServer=True, stderrToServer=True)
 
 
 if 'LOG_FILE' in app.config:
