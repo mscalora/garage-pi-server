@@ -1,2 +1,4 @@
-flaskr.db
 .idea
+*.pyc
+*.cfg
+*.db
