@@ -126,7 +126,7 @@ def before_request():
 @app.route('/camera')
 def get_image():
     filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
-    camera.get_webcam_image(filename)
+    camera.get_webcam_image(filename, rotation=app.config['CAMERA_ROTATION'] if 'CAMERA_ROTATION' in app.config else None)
     return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg')
 
 
