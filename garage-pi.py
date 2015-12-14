@@ -2,7 +2,7 @@
 import os
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash, send_file  # , logging as flask_logging
+     render_template, flash, send_file, jsonify  # , logging as flask_logging
 from flask.ext.bcrypt import Bcrypt
 import time
 import datetime
@@ -60,6 +60,7 @@ def test():
 @app.cli.command('initdb')
 def initdb_command():
     """Creates the database tables."""
+    print("Initializing: %s" % app.config['DATABASE'])
     db = get_db()
     with app.open_resource('schema.sql', mode='r') as f:
         db.cursor().executescript(f.read())
@@ -82,6 +83,7 @@ def create_admin():
         print("Example:")
         print("    USER=joe PW=secret flask -a garage-pi create_admin")
         return
+    print("Adding admin user %s to: %s" % (userid, app.config['DATABASE']))
     db = get_db()
     cur = db.execute('select id, userid, pwhash, admin from user where userid = ?', [userid])
     entries = cur.fetchall()
@@ -123,6 +125,12 @@ def before_request():
         return redirect(url_for('login'))
 
 
+def get_app_state():
+    return {
+        "gpio": gpio.get_all()
+    }
+
+
 @app.route('/camera')
 def get_image():
     filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
@@ -133,16 +141,20 @@ def get_image():
 @app.route('/action/gdoor')
 def action_gdoor():
     gpio.pulse(1)
+    # TODO: schedule door check here
+    return jsonify(**get_app_state())
 
 
 @app.route('/action/light')
 def action_light():
-    gpio.pulse(2, duration=2)
+    gpio.toggle(2, max_duration=60*10)
+    return jsonify(**get_app_state())
 
 
 @app.route('/action/buzzer')
 def action_buzer():
-    gpio.pulse(3)
+    gpio.pulse(3, duration=5)
+    return jsonify(**get_app_state())
 
 
 @app.route('/')
@@ -189,7 +201,16 @@ def login():
     error = None
     if request.method == 'POST':
         db = get_db()
-        cur = db.execute('select id, userid, pwhash, admin from user where userid = ?', [request.form['username']])
+        try:
+            cur = db.execute('select id, userid, pwhash, admin from user where userid = ?', [request.form['username']])
+        except sqlite3.OperationalError, e:
+            if e.message == 'no such table: user':
+                return render_template('error.html', error_type='Initialization',
+                                       error_message=e.message,
+                                       error_help='You probably need to run initdb or configure the DATABASE path correctly',
+                                       db_path=app.config['DATABASE'])
+            else:
+                raise
         users = cur.fetchall()
         if len(users):
             user = dict(users[0])

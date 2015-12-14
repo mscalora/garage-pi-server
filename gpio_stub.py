@@ -1,3 +1,8 @@
+from __future__ import print_function
+
+gpio_state = {
+
+}
 
 class GPIO:
     BCM = -1
@@ -19,8 +24,18 @@ class GPIO:
 
     @staticmethod
     def output(pin, state):
-        pass
+        global gpio_state
+        print("Pin: %d State: %s" % (pin, str(state)))
+        gpio_state[pin] = state
+
+    @staticmethod
+    def input(pin):
+        global gpio_state
+        state = gpio_state[pin] if pin in gpio_state else False
+        print("Pin: %d State: %s" % (pin, str(state)))
+        return state
 
     @staticmethod
     def setup(pin, state):
+        global gpio_state
         pass

@@ -41,3 +41,13 @@ th {
 .btn:focus {
     outline: none;
 }
+
+button.btn-default.hover, button.btn-default:hover {
+    background-color: white;
+    border-color: #666;
+}
+
+button.btn-default.focus, button.btn-default:focus {
+    background-color: white;
+    border-color: #888;
+}

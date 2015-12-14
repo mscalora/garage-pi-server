@@ -170,9 +170,7 @@
         $('.code-row .panel-title').text(code);
         if (code.length>=confirm.length) {
             if (code==confirm) {
-                $.ajax({url:'/action/gdoor', success: function(){
-                    reset_code();
-                }})
+                $.getJSON("/action/gdoor", reset_code);
             } else {
                 reset_code();
             }
@@ -181,10 +179,10 @@
         }
     });
     $('.btn-light').on('click', function(){
-
+        $.getJSON("/action/light");
     });
     $('.btn-buzzer').on('click', function(){
-
+        $.getJSON("/action/buzzer");
     });
     </script>
 {% endblock %}
