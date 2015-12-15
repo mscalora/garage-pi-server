@@ -11,10 +11,10 @@ else:
     import RPi.GPIO as GPIO
 
 relays = {
-    1: 17,
-    2: 18,
-    3: 22,
-    4: 23,
+    1: 23,
+    2: 22,
+    3: 18,
+    4: 17,
 }
 
 sensors = {
