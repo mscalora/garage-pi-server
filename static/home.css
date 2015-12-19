@@ -1,0 +1,65 @@
+
+.webcam-container { position: relative; }
+.img-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    opacity: 0;
+    text-align: center;
+}
+.img-area img {
+    max-height: 100%;
+    max-width: 100%;
+}
+.controls-row .panel-body button {
+    padding: 4px 10px;
+    line-height: 1;
+    vertical-align: top;
+    border-radius: 20px;
+    margin: 0 14px;
+}
+.controls-row .panel-body {
+    text-align: center;
+}
+.code-row .panel-heading i {
+    Xfloat: right;
+}
+.code-row .panel-body {
+    text-align: center;
+}
+.code-row button {
+    margin: 0 6px;
+}
+.code-row .keep-together {
+    display: inline-block;
+}
+button:active,
+button:focus {
+    outline: none;
+}
+.code-closer {
+    float: right;
+    position: relative;
+    Xoutline: 2px dashed red;
+    height: 1em;
+    width: 1em;
+}
+
+.code-closer-box {
+    position: absolute;
+    top: -1em;
+    bottom: -1em;
+    left: -1em;
+    right: -1em;
+    padding: 1em;
+    Xoutline: 2px dotted green;
+}
+
+.code-closer-box:hover i {
+    color: blue;
+}
+.camera-menu {
+    float: right;
+}

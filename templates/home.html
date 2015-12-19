@@ -1,10 +1,27 @@
 {% extends "layout.html" %}
+{% block head %}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+
+{% endblock %}
+
 {% block body %}
 
     <div class="webcam-row row">
         <div class="col-sm-12">
             <div class="panel panel-default">
                 <div class="panel-heading">
+                    <div class="dropdown camera-menu">
+                        <button class="btn btn-xs btn-default dropdown-toggle" type="button" id="camera-menu-btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            Select
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="camera-menu-btn">
+                            {% for camera in cameras.keys() %}
+                            <li><a class="camera-item-link" href="#" data-camera="{{ camera }}">{{ cameras[camera]['name'] if 'name' in cameras[camera] else camera }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                     <h3 class="panel-title">Camera</h3>
                 </div>
                 <div class="panel-body">
@@ -64,78 +81,49 @@
             </div>
         </div>
     </div>
-
-    <style>
-        .webcam-container { position: relative; }
-        .img-area {
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            opacity: 0;
-            text-align: center;
-        }
-        .img-area img {
-            max-height: 100%;
-            max-width: 100%;
-        }
-        .controls-row .panel-body button {
-            padding: 4px 10px;
-            line-height: 1;
-            vertical-align: top;
-            border-radius: 20px;
-            margin: 0 14px;
-        }
-        .controls-row .panel-body {
-            text-align: center;
-        }
-        .code-row .panel-heading i {
-            Xfloat: right;
-        }
-        .code-row .panel-body {
-            text-align: center;
-        }
-        .code-row button {
-            margin: 0 6px;
-        }
-        .code-row .keep-together {
-            display: inline-block;
-        }
-        button:active,
-        button:focus {
-            outline: none;
-        }
-        .code-closer {
-            float: right;
-            position: relative;
-            Xoutline: 2px dashed red;
-            height: 1em;
-            width: 1em;
-        }
-
-        .code-closer-box {
-            position: absolute;
-            top: -1em;
-            bottom: -1em;
-            left: -1em;
-            right: -1em;
-            padding: 1em;
-            Xoutline: 2px dotted green;
-        }
-
-        .code-closer-box:hover i {
-            color: blue;
-        }
-    </style>
+{% endblock %}
+{% block bottom %}
     <script>
-        function reload(){
-            $('.img-area img').prop('src','/camera?ts='+ $.now());
+        var camera;
+        $('.camera-item-link').on('click', function(){
+            var it = $(this);
+            camera = it.data('camera');
+            localStorage.camera = camera;
+            $('.panel-title').text(it.text());
+            it.closest('.open').find('button[data-toggle=dropdown]').dropdown('toggle');
+            return false;
+        });
+        var camera_inited = false;
+        if (localStorage && localStorage.camera) {
+            $('.camera-item-link[data-camera]').each(function(){
+                if ($(this).data('camera')===localStorage.camera) {
+                    $(this).trigger('click');
+                    camera_inited = true;
+                }
+            });
         }
-        var recovery_timer;
+        if (!camera_inited) {
+            $('.camera-item-link:first').trigger('click');
+        }
+
+        function refresh_image(sel){
+            var img = $(sel || this);
+            var url = img.prop('src');
+            var anchor = document.createElement('a');
+            anchor.href = url;
+            var params = parseUrlParams(anchor);
+            params['ts'] = $.now();
+            if (camera) {
+                params['cam'] = camera;
+            }
+            anchor.search = formatUrlParams(params);
+            console.log('Refresh: '+anchor.href);
+            img.prop('src', anchor.href);
+        }
+        var recovery_timer
         $('.img-area img').on('load', function(){
             $('.placeholder').prop('src', $('.img-area img').prop('src'));
-            setTimeout(reload, 1000);
+            setTimeout(refresh_image.bind($('.img-area img')), 1000);
             clearInterval(recovery_timer);
             recovery_timer = setInterval(function(){
                 $('.img-area img').prop('src','/camera?ts='+ $.now());

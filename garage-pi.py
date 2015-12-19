@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+from collections import OrderedDict
 import os
+import re
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash, send_file, jsonify  # , logging as flask_logging
@@ -131,10 +133,32 @@ def get_app_state():
     }
 
 
+def get_camera_by_name(name):
+    # TODO: create camera table to translate camera name to cam
+    return None
+
+
+recently_used_cam = None
+recently_used_camera = None
+
+
 @app.route('/camera')
 def get_image():
+    global recently_used_cam, recently_used_camera
+    camera_id = None
+    if 'cam' in request.args:
+        cam = request.args['cam']
+        if re.match(ur'^/dev/video\d$', cam):
+            camera_id = cam
+        elif recently_used_cam == cam:
+            camera_id = recently_used_camera
+        else:
+            camera_id = get_camera_by_name(cam)
+            if camera_id is not None:
+                recently_used_cam = cam
+                recently_used_camera = camera_id
     filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
-    camera.get_webcam_image(filename, rotation=app.config['CAMERA_ROTATION'] if 'CAMERA_ROTATION' in app.config else None)
+    camera.get_webcam_image(filename, camera=camera_id, rotation=app.config['CAMERA_ROTATION'] if 'CAMERA_ROTATION' in app.config else None)
     return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg')
 
 
@@ -159,7 +183,8 @@ def action_buzer():
 
 @app.route('/')
 def home():
-    return render_template('home.html', confirm_code=app.config['GDOOR_CODE'])
+    cameras = OrderedDict(sorted(camera.get_webcams().items(), key=lambda item: item[1]['name']))
+    return render_template('home.html', confirm_code=app.config['GDOOR_CODE'], cameras=cameras)
 
 
 @app.route('/log')
