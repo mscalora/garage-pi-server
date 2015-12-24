@@ -63,3 +63,11 @@ button:focus {
 .camera-menu {
     float: right;
 }
+
+.row.app-state {
+    margin-bottom: 0.5em;
+}
+
+.webcam-row .panel {
+    margin-bottom: 0.5em;
+}

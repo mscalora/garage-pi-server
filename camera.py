@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import threading
 import util
 
 cameras = {}
@@ -67,21 +68,35 @@ else:
         return camera
 
 
-    def get_webcam_image(tmp_file='/var/tmp/temp_image.jpeg', rotation=None, retry=0, camera=None):
+    def get_webcam_image(tmp_file='/var/tmp/temp_image.jpeg', rotation=None, retry=0, camera=None, brightness=None):
         # test pygame.camera.list_cameras() #Camera detected or not
         camera_path = pick_camera() if camera is None else resolve_camera(camera)
         try:
             cam = pygame.camera.Camera(camera_path, (640, 480))
+            options = {}
+            if rotation is not None and rotation == 180:
+                options['vflip'] = True
+            if brightness is not None:
+                options['brightness'] = int(brightness)
             cam.start()
-            img = cam.get_image()
+            # time.sleep(0.05)
+            if len(options):
+                cam.set_controls(**options)
+            tls = threading.local()
+            if hasattr(tls, 'surface'):
+                img = cam.get_image(tls.surface)
+            else:
+                img = cam.get_image()
+            tls.surface = img
             cam.stop()
-            if rotation is not None:
+            if rotation is not None and rotation != 180:
                 img = pygame.transform.rotate(img, int(rotation))
             pygame.image.save(img, tmp_file)
         except SystemError, e:
+            print("Retry: %d" % retry)
             report_camera_error(camera_path)
             if retry < 3:
-                get_webcam_image(tmp_file, rotation, retry+1)
+                get_webcam_image(tmp_file=tmp_file, rotation=rotation, camera=camera, brightness=brightness, retry=retry+1)
 
 
     def get_webcams():
@@ -90,3 +105,36 @@ else:
             "size": pygame.camera.Camera(path).get_size(),
             "name": 'Camera %d' % (int('0'+re.sub(ur'\D', '', path))+1)
         } for path in cam_list}
+
+
+#
+# # for debugging
+#
+#     def get_surface(rotation=None, retry=0, camera=None, brightness=None):
+#         # test pygame.camera.list_cameras() #Camera detected or not
+#         camera_path = pick_camera() if camera is None else resolve_camera(camera)
+#         try:
+#             cam = pygame.camera.Camera(camera_path, (640, 480))
+#             options = {}
+#             if rotation is not None and rotation == 180:
+#                 options['vflip'] = True
+#             if brightness is not None:
+#                 options['brightness'] = int(brightness)
+#             cam.start()
+#             if len(options):
+#                 cam.set_controls(**options)
+#             tls = threading.local()
+#             if hasattr(tls, 'surface'):
+#                 img = cam.get_image(tls.surface)
+#             else:
+#                 img = cam.get_image()
+#             tls.surface = img
+#             cam.stop()
+#             if rotation is not None and rotation != 180:
+#                 img = pygame.transform.rotate(img, int(rotation))
+#             return img
+#         except SystemError, e:
+#             report_camera_error(camera_path)
+#             if retry < 3:
+#                 get_surface(rotation=rotation, camera=camera, brightness=brightness, retry=retry+1)
+#         return None

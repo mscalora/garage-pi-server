@@ -36,6 +36,54 @@
         </div>
     </div>
 
+    <div class="controls-row row app-state">
+        <div class="col-sm-12">
+            <div class="state-display">
+                Relays: <span class="relays-state">
+                </span>
+                Sensors: <span class="sensors-state">
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .state-display {
+            font-size: large;
+            text-align: center;
+        }
+        .relays-state [data-value="on"]:after {
+            content: "?";
+            color: black;
+        }
+
+        .relays-state [data-value="on"]:after {
+            content: "◉";
+            color: green;
+        }
+
+        .relays-state [data-value="off"]:after {
+            content: "◎";
+            color: red;
+        }
+
+        .sensors-state [data-value]:after {
+            content: "?";
+            color: black;
+        }
+
+        .sensors-state [data-value="1"]:after {
+            content: "◉";
+            color: green;
+        }
+
+        .sensors-state [data-value="0"]:after {
+            content: "◎";
+            color: red;
+        }
+
+    </style>
+
     <div class="controls-row row">
         <div class="col-sm-12">
             <div class="panel panel-default">
@@ -84,12 +132,53 @@
 {% endblock %}
 {% block bottom %}
     <script>
+        var ping_freq = 1;
+        var ping_count = 0;
+        var ping_last = 0;
+        var ping_xhr = 0;
+        var last_request = 0;
+        function ping(){
+            var request = $.now();
+            if (request-last_request<900) {
+                console.log("Skipping %s %s", last_request, request, request-last_request);
+                return;
+            }
+            console.log("Requesting %s %s", last_request, request, request-last_request);
+            last_request = $.now();
+            if (!paused()) $.getJSON('/ping?ts='+moment().format('HH:mm:SSS'),function(data){
+                var now = $.now();
+                console.log("%s %o", now-request, data);
+                ping_count++;
+                if (ping_count>10) {
+                    ping_freq = Math.min(6,ping_freq+1);
+                }
+                var relays = data.gpio.relays;
+                for(var i = 1; i in relays; i++) {
+                    var span = $('.relays-state [relay='+i+']');
+                    if (span.length==0) {
+                        span = $('<span>').attr('relay', i).appendTo('.relays-state');
+                    }
+                    span.attr('data-value', relays[i])
+                }
+                var sensors = data.gpio.sensors;
+                for(var j = 1; j in sensors; j++) {
+                    var span = $('.sensors-state [data-sensor='+j+']');
+                    if (span.length==0) {
+                        span = $('<span>').attr('data-sensor', j).attr('data-value', "").appendTo('.sensors-state');
+                    }
+                    span.attr('data-value', sensors[j]);
+                }
+            });
+            ping_last = $.now();
+        }
+        var ping_timer = setInterval(ping, 2000);
+
         var camera;
         $('.camera-item-link').on('click', function(){
             var it = $(this);
             camera = it.data('camera');
             localStorage.camera = camera;
-            $('.panel-title').text(it.text());
+            $('.camera-menu button').text(it.text());
             it.closest('.open').find('button[data-toggle=dropdown]').dropdown('toggle');
             return false;
         });
@@ -117,8 +206,7 @@
                 params['cam'] = camera;
             }
             anchor.search = formatUrlParams(params);
-            console.log('Refresh: '+anchor.href);
-            img.prop('src', anchor.href);
+            if (!paused()) img.prop('src', anchor.href);
         }
         var recovery_timer
         $('.img-area img').on('load', function(){
@@ -126,8 +214,8 @@
             setTimeout(refresh_image.bind($('.img-area img')), 1000);
             clearInterval(recovery_timer);
             recovery_timer = setInterval(function(){
-                $('.img-area img').prop('src','/camera?ts='+ $.now());
-            }, 5000);
+                if (!paused()) $('.img-area img').prop('src','/camera?ts='+ $.now());
+            }, 10000);
         }).prop('src','/camera');
         var buttons = $('.controls-row .panel-body button');
         var h = 0, w = 0;
@@ -137,6 +225,9 @@
         }).each(function(){
             $(this).height(h).width(w);
         });
+        function paused() {
+            return $('#_pauser').is(':checked');
+        }
     $('.code-row').hide();
     var code = '';
     var confirm = '{{ confirm_code }}';

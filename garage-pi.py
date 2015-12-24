@@ -6,14 +6,18 @@ from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash, send_file, jsonify  # , logging as flask_logging
 from flask.ext.bcrypt import Bcrypt
+
 import time
 import datetime
 import camera
 import gpio
 import sys
+import util
+from werkzeug.contrib.cache import SimpleCache
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
+cache = SimpleCache(threshold=10)
 
 # Load default config and override config from an environment variable
 app.config.update(dict(
@@ -34,8 +38,12 @@ if 'REMOTE_DEBUG' in app.config or 'REMOTE_DEBUG' in os.environ:
 
 if 'LOG_FILE' in app.config:
     from logging.handlers import TimedRotatingFileHandler
+    import logging
     handler = TimedRotatingFileHandler(app.config['LOG_FILE'])
-    handler.setLevel(app.config['LOG_LEVEL'] if 'LOG_LEVEL' in app.config else 'WARNING')
+    level = app.config['LOG_LEVEL'] if 'LOG_LEVEL' in app.config else 'WARNING'
+    handler.setLevel(level)
+    werkzeug_log = logging.getLogger('werkzeug')
+    werkzeug_log.setLevel(level)
     app.logger.addHandler(handler)
 
 
@@ -52,11 +60,6 @@ def connect_db():
     rv = sqlite3.connect(app.config['DATABASE'])
     rv.row_factory = sqlite3.Row
     return rv
-
-
-@app.cli.command('test')
-def test():
-    print()
 
 
 @app.cli.command('initdb')
@@ -128,9 +131,15 @@ def before_request():
 
 
 def get_app_state():
-    return {
+    state = {
         "gpio": gpio.get_all()
     }
+    if 'LOG_FILE' in app.config and os.path.isfile(app.config['LOG_FILE']):
+        log_file = app.config['LOG_FILE']
+        if 'log_mod' not in session or os.path.getmtime(log_file) > session['log_mod']:
+            session['log_mod'] = os.path.getmtime(log_file)
+            state['log'] = util.tail_lines(log_file, 10)
+    return state
 
 
 def get_camera_by_name(name):
@@ -146,6 +155,7 @@ recently_used_camera = None
 def get_image():
     global recently_used_cam, recently_used_camera
     camera_id = None
+    brightness = int('0'+request.args['brightness']) if 'brightness' in request.args else None
     if 'cam' in request.args:
         cam = request.args['cam']
         if re.match(ur'^/dev/video\d$', cam):
@@ -157,9 +167,18 @@ def get_image():
             if camera_id is not None:
                 recently_used_cam = cam
                 recently_used_camera = camera_id
-    filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
-    camera.get_webcam_image(filename, camera=camera_id, rotation=app.config['CAMERA_ROTATION'] if 'CAMERA_ROTATION' in app.config else None)
-    return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg')
+    rotation=app.config['CAMERA_ROTATION'] if 'CAMERA_ROTATION' in app.config else None
+
+    cam_slug = "%s-%s-%s" % (camera_id, rotation, brightness)
+    filename = cache.get(cam_slug)
+    status = 200
+    if filename is None:
+        filename = os.path.join(app.config['TMP_IMAGES_PATH'], 'live-%s.jpeg' % (int(time.time()) % 10))
+        camera.get_webcam_image(filename, camera=camera_id, rotation=rotation, brightness=brightness)
+        cache.set(cam_slug, filename, timeout=2)
+    else:
+        status = 203
+    return send_file(filename if os.path.exists(filename) else 'static/gdoor.jpg', mimetype='image/jpeg'), status
 
 
 @app.route('/action/gdoor')
@@ -178,6 +197,11 @@ def action_light():
 @app.route('/action/buzzer')
 def action_buzer():
     gpio.pulse(3, duration=5)
+    return jsonify(**get_app_state())
+
+
+@app.route('/ping')
+def ping():
     return jsonify(**get_app_state())
 
 

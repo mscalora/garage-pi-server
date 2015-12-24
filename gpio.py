@@ -36,6 +36,9 @@ for relay, pin_num in relays.iteritems():
     GPIO.setup(pin_num, GPIO.OUT)
     GPIO.output(pin_num, OFF)
 
+for sensor, pin_num in sensors.iteritems():
+    GPIO.setup(pin_num, GPIO.IN)
+
 
 def log_action(device, action):
     print("GPIO Device: %s Action: %s" % (device, action))
@@ -113,6 +116,6 @@ def all_off(log=True):
 
 def get_all():
     return {
-        "relay": {relay_num: get_relay(relay_num) for relay_num, pin in relays.iteritems()},
+        "relays": {relay_num: get_relay(relay_num) for relay_num, pin in relays.iteritems()},
         "sensors": {sensor_num: get_sensor(sensor_num) for sensor_num, pin in sensors.iteritems()}
     }

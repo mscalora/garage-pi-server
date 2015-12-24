@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
     <script src="{{ url_for('static', filename='util.js') }}"></script>
 
     {% block head %}{% endblock %}
@@ -70,6 +71,9 @@
         {% block body %}{% endblock %}
 
     </div>
+    {% if session.logged_in and session.logged_in.admin %}
+        <div style="text-align: center;"><label><input id="_pauser" type="checkbox"> Pause Updates</label></div>
+    {% endif %}
 
 </body>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
